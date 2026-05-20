@@ -2,7 +2,10 @@ module github.com/scality/file-reflector
 
 go 1.26.3
 
-require github.com/stretchr/testify v1.8.4
+require (
+	github.com/scality/go-errors v1.2.0
+	github.com/stretchr/testify v1.8.4
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
