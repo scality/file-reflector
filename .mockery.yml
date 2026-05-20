@@ -1,0 +1,14 @@
+all: false
+formatter: goimports
+generate: true
+include-auto-generated: false
+log-level: info
+template: testify
+packages:
+  github.com/scality/file-reflector/pkg/service:
+    config:
+      all: true
+      dir: "{{.InterfaceDir}}/mocks"
+      pkgname: mocks
+      structname: "Mock{{.InterfaceName}}"
+      filename: "mock_{{.InterfaceName}}.go"
