@@ -3,6 +3,7 @@ module github.com/scality/file-reflector
 go 1.26.3
 
 require (
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/onsi/ginkgo/v2 v2.29.0
 	github.com/onsi/gomega v1.41.0
 	github.com/scality/go-errors v1.2.0
