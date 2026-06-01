@@ -37,6 +37,8 @@ linters:
     rules:
       - linters:
           - dupl
+          - goconst
+          - gosec
           - lll
         path: pkg/.*_test.go
     paths:
