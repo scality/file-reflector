@@ -2,6 +2,7 @@ package di
 
 import (
 	"log/slog"
+	"os"
 
 	"github.com/scality/file-reflector/cmd/config"
 	"github.com/scality/file-reflector/pkg/presentation/watcher"
@@ -17,10 +18,13 @@ type Container struct {
 
 	logger *slog.Logger
 
+	sourceRoot *os.Root
+	targetRoot *os.Root
+
 	matcher      service.Matcher
 	sourceReader service.SourceReader
 	targetWriter service.TargetWriter
-	eventSource  service.EventSource
+	eventSources []service.EventSource
 
 	syncPathUsecase    *usecase.SyncPath
 	initialSyncUsecase *usecase.InitialSync

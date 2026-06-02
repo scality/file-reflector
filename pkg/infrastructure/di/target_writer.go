@@ -28,15 +28,31 @@ type targetWriter struct {
 	service.EntryRemover
 }
 
-// getTargetWriter returns the singleton TargetWriter rooted at --target.
-func (c *Container) getTargetWriter() (service.TargetWriter, error) {
-	if c.targetWriter == nil {
+// getTargetRoot returns the singleton *os.Root scoped to --target. It
+// is shared between the target-side adapters and the target-side event
+// source so they back onto the same file descriptor.
+func (c *Container) getTargetRoot() (*os.Root, error) {
+	if c.targetRoot == nil {
 		root, err := os.OpenRoot(c.cfg.Target)
 		if err != nil {
 			return nil, errors.Wrap(ErrOpenTargetRoot,
 				errors.WithProperty("path", c.cfg.Target),
 				errors.CausedBy(err),
 			)
+		}
+
+		c.targetRoot = root
+	}
+
+	return c.targetRoot, nil
+}
+
+// getTargetWriter returns the singleton TargetWriter rooted at --target.
+func (c *Container) getTargetWriter() (service.TargetWriter, error) {
+	if c.targetWriter == nil {
+		root, err := c.getTargetRoot()
+		if err != nil {
+			return nil, err
 		}
 
 		mw := metadatawriter.NewOSFS(root)

@@ -15,12 +15,12 @@ func (c *Container) GetWatcher() (*watcher.Watcher, error) {
 			return nil, err
 		}
 
-		c.watcher = watcher.NewWatcher(
-			c.getLogger(),
-			c.getEventSource(),
-			initial,
-			syncPath,
-		)
+		eventSources, err := c.getEventSources()
+		if err != nil {
+			return nil, err
+		}
+
+		c.watcher = watcher.NewWatcher(c.getLogger(), initial, syncPath, eventSources...)
 	}
 
 	return c.watcher, nil
