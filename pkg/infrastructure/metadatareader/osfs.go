@@ -34,7 +34,7 @@ func NewOSFS(root *os.Root) *OSFS {
 // FileNode{Kind: NodeAbsent} with a nil error — the conventional
 // "no such file" shape consumers expect.
 func (o *OSFS) Stat(_ context.Context, rel string) (domain.FileNode, error) {
-	info, err := o.root.Lstat(rel)
+	info, err := o.root.Lstat(osPath(rel))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return domain.FileNode{Kind: domain.NodeAbsent}, nil
@@ -70,7 +70,7 @@ func (o *OSFS) Stat(_ context.Context, rel string) (domain.FileNode, error) {
 
 // ReadDir lists the immediate children of rel.
 func (o *OSFS) ReadDir(_ context.Context, rel string) ([]string, error) {
-	entries, err := fs.ReadDir(o.root.FS(), readDirName(rel))
+	entries, err := fs.ReadDir(o.root.FS(), osPath(rel))
 	if err != nil {
 		return nil, errors.Wrap(ErrMetadataRead,
 			errors.WithDetail("readdir"),
@@ -87,9 +87,9 @@ func (o *OSFS) ReadDir(_ context.Context, rel string) ([]string, error) {
 	return names, nil
 }
 
-// readDirName maps the port's "" (root) to "." which is what fs.ReadDir
-// expects for the root of an fs.FS.
-func readDirName(rel string) string {
+// osPath maps the port's "" (root) to "." which is what the os.Root and
+// fs.FS APIs expect when addressing the root itself.
+func osPath(rel string) string {
 	if rel == "" {
 		return "."
 	}
