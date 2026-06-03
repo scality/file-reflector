@@ -21,7 +21,7 @@ func (c *Container) GetWatcher() (*watcher.Watcher, error) {
 		}
 
 		c.watcher = watcher.NewWatcher(
-			c.getLogger(),
+			c.GetLogger(),
 			initial,
 			syncPath,
 			watcher.DefaultRetryDelay,

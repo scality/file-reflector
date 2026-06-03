@@ -22,7 +22,7 @@ func (c *Container) getEventSources() ([]service.EventSource, error) {
 			return nil, err
 		}
 
-		logger := c.getLogger()
+		logger := c.GetLogger()
 		c.eventSources = []service.EventSource{
 			eventsource.NewFsnotify(sourceRoot, logger.With(slog.String("watcher_side", "source"))),
 			eventsource.NewFsnotify(targetRoot, logger.With(slog.String("watcher_side", "target"))),
