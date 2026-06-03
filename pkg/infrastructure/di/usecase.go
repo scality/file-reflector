@@ -10,12 +10,17 @@ func (c *Container) getSyncPathUsecase() (*usecase.SyncPath, error) {
 			return nil, err
 		}
 
-		c.syncPathUsecase = usecase.NewSyncPath(
-			c.getLogger(),
-			c.getSourceReader(),
-			c.getTargetWriter(),
-			m,
-		)
+		sr, err := c.getSourceReader()
+		if err != nil {
+			return nil, err
+		}
+
+		tw, err := c.getTargetWriter()
+		if err != nil {
+			return nil, err
+		}
+
+		c.syncPathUsecase = usecase.NewSyncPath(c.getLogger(), sr, tw, m)
 	}
 
 	return c.syncPathUsecase, nil
@@ -34,13 +39,17 @@ func (c *Container) getInitialSyncUsecase() (*usecase.InitialSync, error) {
 			return nil, err
 		}
 
-		c.initialSyncUsecase = usecase.NewInitialSync(
-			c.getLogger(),
-			c.getSourceReader(),
-			c.getTargetWriter(),
-			m,
-			sp,
-		)
+		sr, err := c.getSourceReader()
+		if err != nil {
+			return nil, err
+		}
+
+		tw, err := c.getTargetWriter()
+		if err != nil {
+			return nil, err
+		}
+
+		c.initialSyncUsecase = usecase.NewInitialSync(c.getLogger(), sr, tw, m, sp)
 	}
 
 	return c.initialSyncUsecase, nil
