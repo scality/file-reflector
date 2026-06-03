@@ -36,7 +36,7 @@ var _ = Describe("SyncPath", func() {
 		sourceMock = mocks.NewMockSourceReader(GinkgoT())
 		targetMock = mocks.NewMockTargetWriter(GinkgoT())
 		matcherMock = mocks.NewMockMatcher(GinkgoT())
-		uc = usecase.NewSyncPath(logger, sourceMock, targetMock, matcherMock)
+		uc = usecase.NewSyncPath(logger, sourceMock, targetMock, matcherMock, usecase.MetadataOverrides{})
 		ctx = context.Background()
 	})
 
@@ -324,6 +324,106 @@ var _ = Describe("SyncPath", func() {
 				Mkdir(mock.Anything, path, fs.FileMode(0o750), 1000, 1000).Return(nil)
 
 			Expect(uc.Execute(ctx, path)).To(Succeed())
+		})
+	})
+
+	Describe("when metadata overrides are configured", func() {
+		newSyncPath := func(overrides usecase.MetadataOverrides) *usecase.SyncPath {
+			return usecase.NewSyncPath(logger, sourceMock, targetMock, matcherMock, overrides)
+		}
+
+		BeforeEach(func() {
+			matcherMock.EXPECT().Matches(path).Return(false)
+		})
+
+		It("writes new files with the forced file mode and owner", func() {
+			sourceMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeFile, Mode: 0o600, UID: 1, GID: 1, Size: 7}, nil)
+			targetMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeAbsent}, nil)
+			sourceMock.EXPECT().Open(mock.Anything, path).
+				Return(io.NopCloser(strings.NewReader("payload")), nil)
+			targetMock.EXPECT().
+				WriteAtomic(mock.Anything, path, mock.Anything, fs.FileMode(0o644), 1000, 2000).
+				Return(nil)
+
+			overridden := newSyncPath(usecase.MetadataOverrides{
+				FileMode: new(fs.FileMode(0o644)),
+				UID:      new(1000),
+				GID:      new(2000),
+			})
+			Expect(overridden.Execute(ctx, path)).To(Succeed())
+		})
+
+		It("creates directories with the forced dir mode, ignoring the file mode", func() {
+			sourceMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeDir, Mode: 0o700}, nil)
+			targetMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeAbsent}, nil)
+			targetMock.EXPECT().
+				Mkdir(mock.Anything, path, fs.FileMode(0o750), 0, 0).Return(nil)
+
+			overridden := newSyncPath(usecase.MetadataOverrides{
+				FileMode: new(fs.FileMode(0o644)),
+				DirMode:  new(fs.FileMode(0o750)),
+			})
+			Expect(overridden.Execute(ctx, path)).To(Succeed())
+		})
+
+		It("is a no-op when the target already matches the forced metadata", func() {
+			sourceMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeFile, Mode: 0o600, UID: 1, GID: 1, Size: 7}, nil)
+			targetMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeFile, Mode: 0o644, UID: 1000, GID: 2000, Size: 7}, nil)
+
+			hash := [32]byte{0xEE}
+
+			sourceMock.EXPECT().Hash(mock.Anything, path).Return(hash, nil)
+			targetMock.EXPECT().Hash(mock.Anything, path).Return(hash, nil)
+
+			overridden := newSyncPath(usecase.MetadataOverrides{
+				FileMode: new(fs.FileMode(0o644)),
+				UID:      new(1000),
+				GID:      new(2000),
+			})
+			Expect(overridden.Execute(ctx, path)).To(Succeed())
+		})
+
+		It("re-chmods a target that drifted from the forced mode", func() {
+			sourceMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeFile, Mode: 0o644, Size: 7}, nil)
+			targetMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeFile, Mode: 0o644, Size: 7}, nil)
+
+			hash := [32]byte{0xEF}
+
+			sourceMock.EXPECT().Hash(mock.Anything, path).Return(hash, nil)
+			targetMock.EXPECT().Hash(mock.Anything, path).Return(hash, nil)
+			targetMock.EXPECT().Chmod(mock.Anything, path, fs.FileMode(0o400)).Return(nil)
+
+			overridden := newSyncPath(usecase.MetadataOverrides{
+				FileMode: new(fs.FileMode(0o400)),
+			})
+			Expect(overridden.Execute(ctx, path)).To(Succeed())
+		})
+
+		It("re-chowns a target that drifted from the forced owner", func() {
+			sourceMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeFile, Mode: 0o644, UID: 1, GID: 1, Size: 7}, nil)
+			targetMock.EXPECT().Stat(mock.Anything, path).
+				Return(domain.FileNode{Kind: domain.NodeFile, Mode: 0o644, UID: 1, GID: 1, Size: 7}, nil)
+
+			hash := [32]byte{0xF0}
+
+			sourceMock.EXPECT().Hash(mock.Anything, path).Return(hash, nil)
+			targetMock.EXPECT().Hash(mock.Anything, path).Return(hash, nil)
+			targetMock.EXPECT().Chown(mock.Anything, path, 1000, 2000).Return(nil)
+
+			overridden := newSyncPath(usecase.MetadataOverrides{
+				UID: new(1000),
+				GID: new(2000),
+			})
+			Expect(overridden.Execute(ctx, path)).To(Succeed())
 		})
 	})
 
