@@ -68,6 +68,15 @@ func (f *Fsnotify) Run(ctx context.Context) (<-chan string, error) {
 func (f *Fsnotify) addRecursive(fsw *fsnotify.Watcher, rel string) error {
 	walkErr := fs.WalkDir(f.root.FS(), rel, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
+			// The entry vanished between the Create event and this walk:
+			// a short-lived file such as our own write temp (created then
+			// renamed into place), or anything a third party creates then
+			// removes. That is a normal race on a tree we actively mutate,
+			// not a failure.
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
+
 			return err //nolint:wrapcheck // WalkDir callback; the outer call re-wraps
 		}
 

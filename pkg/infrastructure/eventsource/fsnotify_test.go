@@ -2,7 +2,6 @@ package eventsource_test
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,6 +14,35 @@ import (
 	"github.com/scality/file-reflector/pkg/infrastructure/eventsource"
 )
 
+// errorCapturingHandler is a slog.Handler that records the messages
+// logged at error level, so a test can assert the watcher stayed quiet.
+type errorCapturingHandler struct {
+	mu       sync.Mutex
+	messages []string
+}
+
+func (h *errorCapturingHandler) Enabled(context.Context, slog.Level) bool { return true }
+
+func (h *errorCapturingHandler) Handle(_ context.Context, r slog.Record) error {
+	if r.Level >= slog.LevelError {
+		h.mu.Lock()
+		h.messages = append(h.messages, r.Message)
+		h.mu.Unlock()
+	}
+
+	return nil
+}
+
+func (h *errorCapturingHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h *errorCapturingHandler) WithGroup(string) slog.Handler      { return h }
+
+func (h *errorCapturingHandler) errors() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return append([]string(nil), h.messages...)
+}
+
 var _ = Describe("Fsnotify", func() {
 	var (
 		tmpDir   string
@@ -25,6 +53,7 @@ var _ = Describe("Fsnotify", func() {
 		received []string
 		mu       sync.Mutex
 		collect  func() []string
+		logs     *errorCapturingHandler
 	)
 
 	BeforeEach(func() {
@@ -36,8 +65,8 @@ var _ = Describe("Fsnotify", func() {
 		Expect(err).NotTo(HaveOccurred())
 		DeferCleanup(func() { _ = root.Close() })
 
-		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-		f = eventsource.NewFsnotify(root, logger)
+		logs = &errorCapturingHandler{}
+		f = eventsource.NewFsnotify(root, slog.New(logs))
 		ctx, cancel = context.WithCancel(context.Background())
 		received = nil
 		collect = func() []string {
@@ -101,6 +130,23 @@ var _ = Describe("Fsnotify", func() {
 
 		Eventually(collect, "2s").Should(ConsistOf("sub", "sub/g.txt"))
 		Consistently(collect, "200ms").Should(ConsistOf("sub", "sub/g.txt"))
+	})
+
+	It("does not log an error when a created entry is renamed away before it is walked", func() {
+		_ = startAndDrain()
+
+		// Mimic WriteAtomic: create a temp file then rename it over the
+		// final name. The temp's Create event reaches the watcher after
+		// the rename has removed it, so the recursive add walks a path
+		// that no longer exists — a normal race, not an error.
+		tmp := filepath.Join(tmpDir, "f.txt.file-reflector-tmp-deadbeef")
+		final := filepath.Join(tmpDir, "f.txt")
+
+		Expect(os.WriteFile(tmp, []byte("payload"), 0o600)).To(Succeed())
+		Expect(os.Rename(tmp, final)).To(Succeed())
+
+		Eventually(collect, "2s").Should(ContainElement("f.txt"))
+		Consistently(logs.errors, "200ms").Should(BeEmpty())
 	})
 
 	It("emits an event when an entry is moved out of the watched tree", func() {
