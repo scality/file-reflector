@@ -1,0 +1,89 @@
+name: "Pre Merge"
+
+on:
+  workflow_dispatch:
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yaml
+    secrets: inherit
+    with:
+      is-development: true
+      is-latest: false
+      is-stable: false
+
+  verify-capabilities:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install getcap
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libcap2-bin
+      - name: Login to the registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Assert the binary kept its capabilities through the image build
+        run: |
+          docker pull "${{ needs.build.outputs.image }}"
+          container="$(docker create "${{ needs.build.outputs.image }}")"
+          docker export "$container" --output rootfs.tar
+          docker rm "$container"
+          mkdir extracted
+          sudo tar --xattrs --xattrs-include='*' -C extracted -xf rootfs.tar file-reflector
+          caps="$(getcap extracted/file-reflector)"
+          echo "Capabilities: $caps"
+          for cap in cap_chown cap_dac_override cap_fowner; do
+            echo "$caps" | grep -q "$cap" || { echo "ERROR: missing $cap"; exit 1; }
+          done
+
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Run linters
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.2
+
+  generate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Install mockery
+        env:
+          MOCKERY_VERSION: v3.7.0
+        run: go install github.com/vektra/mockery/v3@${{ env.MOCKERY_VERSION }}
+      - name: Verify generated mocks are up to date
+        run: |
+          go generate ./...
+          git diff --exit-code
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Run tests
+        run: go test -race ./...
