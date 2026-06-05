@@ -36,6 +36,12 @@ var _ = Describe("OSFS", func() {
 	})
 
 	Describe("Stat", func() {
+		It("returns NodeDir for the root itself (empty relative path)", func() {
+			node, err := r.Stat(ctx, "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeDir))
+		})
+
 		It("returns NodeFile with size and mode for a regular file", func() {
 			Expect(os.WriteFile(filepath.Join(tmpDir, "a.txt"), []byte("hello"), 0o600)).To(Succeed())
 

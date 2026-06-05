@@ -20,10 +20,27 @@ func (c *Container) getSyncPathUsecase() (*usecase.SyncPath, error) {
 			return nil, err
 		}
 
-		c.syncPathUsecase = usecase.NewSyncPath(c.getLogger(), sr, tw, m)
+		c.syncPathUsecase = usecase.NewSyncPath(c.GetLogger(), sr, tw, m, c.metadataOverrides())
 	}
 
 	return c.syncPathUsecase, nil
+}
+
+// metadataOverrides maps the optional command-line flags onto the
+// usecase's MetadataOverrides. Unset flags stay nil ("preserve the
+// source's value").
+func (c *Container) metadataOverrides() usecase.MetadataOverrides {
+	overrides := usecase.MetadataOverrides{
+		FileMode: c.cfg.FileMode,
+		DirMode:  c.cfg.DirMode,
+	}
+
+	if c.cfg.Owner != nil {
+		overrides.UID = &c.cfg.Owner.UID
+		overrides.GID = &c.cfg.Owner.GID
+	}
+
+	return overrides
 }
 
 // getInitialSyncUsecase returns the singleton InitialSync usecase.
@@ -49,7 +66,7 @@ func (c *Container) getInitialSyncUsecase() (*usecase.InitialSync, error) {
 			return nil, err
 		}
 
-		c.initialSyncUsecase = usecase.NewInitialSync(c.getLogger(), sr, tw, m, sp)
+		c.initialSyncUsecase = usecase.NewInitialSync(c.GetLogger(), sr, tw, m, sp)
 	}
 
 	return c.initialSyncUsecase, nil

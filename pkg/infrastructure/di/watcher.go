@@ -20,7 +20,13 @@ func (c *Container) GetWatcher() (*watcher.Watcher, error) {
 			return nil, err
 		}
 
-		c.watcher = watcher.NewWatcher(c.getLogger(), initial, syncPath, eventSources...)
+		c.watcher = watcher.NewWatcher(
+			c.GetLogger(),
+			initial,
+			syncPath,
+			watcher.DefaultRetryDelay,
+			eventSources...,
+		)
 	}
 
 	return c.watcher, nil

@@ -11,7 +11,7 @@ import (
 // getLogger returns the process-wide logger configured per --log-format
 // and --log-level. Output goes to stderr. Unknown levels fall back to
 // info; unknown formats fall back to text.
-func (c *Container) getLogger() *slog.Logger {
+func (c *Container) GetLogger() *slog.Logger {
 	if c.logger == nil {
 		opts := &slog.HandlerOptions{Level: parseLogLevel(c.cfg.LogLevel)}
 

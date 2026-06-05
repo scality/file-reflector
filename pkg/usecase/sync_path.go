@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"io/fs"
 	"log/slog"
 
 	"github.com/scality/go-errors"
@@ -14,6 +15,46 @@ import (
 // reconciliation.
 var ErrSyncPath = errors.New("sync path")
 
+// MetadataOverrides carries the operator-requested metadata
+// substitutions (--file-mode, --dir-mode, --owner). A nil field means
+// "preserve the source's value". The overrides are applied to the
+// source FileNode right after it is read, so the whole reconciliation
+// (creation, rewrite, metadata sync) targets the forced values without
+// any special-casing downstream.
+type MetadataOverrides struct {
+	FileMode *fs.FileMode
+	DirMode  *fs.FileMode
+	UID      *int
+	GID      *int
+}
+
+// apply returns node with the configured substitutions applied. Only
+// regular files and directories are affected.
+func (m MetadataOverrides) apply(node domain.FileNode) domain.FileNode {
+	switch node.Kind {
+	case domain.NodeFile:
+		if m.FileMode != nil {
+			node.Mode = *m.FileMode
+		}
+	case domain.NodeDir:
+		if m.DirMode != nil {
+			node.Mode = *m.DirMode
+		}
+	default:
+		return node
+	}
+
+	if m.UID != nil {
+		node.UID = *m.UID
+	}
+
+	if m.GID != nil {
+		node.GID = *m.GID
+	}
+
+	return node
+}
+
 // SyncPath reconciles a single relative path between source and target.
 // It is the workhorse used both by InitialSync (during startup) and by
 // the watcher (per fsnotify event at runtime).
@@ -22,6 +63,7 @@ type SyncPath struct {
 	sourceReader service.SourceReader
 	targetWriter service.TargetWriter
 	matcher      service.Matcher
+	overrides    MetadataOverrides
 }
 
 // NewSyncPath constructs a SyncPath with its dependencies.
@@ -30,12 +72,14 @@ func NewSyncPath(
 	sourceReader service.SourceReader,
 	targetWriter service.TargetWriter,
 	matcher service.Matcher,
+	overrides MetadataOverrides,
 ) *SyncPath {
 	return &SyncPath{
 		logger:       logger.With(slog.String("usecase_name", "sync_path")),
 		sourceReader: sourceReader,
 		targetWriter: targetWriter,
 		matcher:      matcher,
+		overrides:    overrides,
 	}
 }
 
@@ -69,6 +113,8 @@ func (uc *SyncPath) Execute(ctx context.Context, relPath string) error {
 
 		src = domain.FileNode{Kind: domain.NodeAbsent}
 	}
+
+	src = uc.overrides.apply(src)
 
 	tgt, err := uc.targetWriter.Stat(ctx, relPath)
 	if err != nil {

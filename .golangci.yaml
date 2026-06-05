@@ -40,7 +40,8 @@ linters:
           - goconst
           - gosec
           - lll
-        path: pkg/.*_test.go
+          - wrapcheck
+        path: _test\.go$
     paths:
       - third_party$
       - builtin$
