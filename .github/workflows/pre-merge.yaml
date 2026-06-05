@@ -56,6 +56,7 @@ jobs:
       - name: Run linters
         uses: golangci/golangci-lint-action@v9
         with:
+          # renovate: datasource=github-releases depName=golangci/golangci-lint
           version: v2.12.2
 
   generate:
@@ -69,6 +70,7 @@ jobs:
           go-version-file: go.mod
       - name: Install mockery
         env:
+          # renovate: datasource=github-releases depName=vektra/mockery
           MOCKERY_VERSION: v3.7.0
         run: go install github.com/vektra/mockery/v3@${{ env.MOCKERY_VERSION }}
       - name: Verify generated mocks are up to date
