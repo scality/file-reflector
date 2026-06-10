@@ -49,4 +49,13 @@ var _ = Describe("OSFS", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(errors.Is(err, contenthasher.ErrContentHash)).To(BeTrue())
 	})
+	It("hashes a file through a symlink (resolution stays inside the root)", func() {
+		content := []byte("via link")
+		Expect(os.WriteFile(filepath.Join(tmpDir, "real"), content, 0o600)).To(Succeed())
+		Expect(os.Symlink("real", filepath.Join(tmpDir, "link"))).To(Succeed())
+
+		got, err := h.Hash(ctx, "link")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got).To(Equal(sha256.Sum256(content)))
+	})
 })
