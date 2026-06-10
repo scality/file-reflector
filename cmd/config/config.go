@@ -1,6 +1,9 @@
 package config
 
-import "io/fs"
+import (
+	"io/fs"
+	"time"
+)
 
 // Owner is the uid:gid pair the agent applies to synced entries when the
 // operator explicitly sets --owner. A nil *Owner means "preserve the
@@ -23,6 +26,10 @@ type Config struct {
 	FileMode *fs.FileMode
 	DirMode  *fs.FileMode
 	Owner    *Owner
+
+	// SymlinkPollInterval is how often source symlinks are re-checked
+	// for changes happening behind them; 0 disables the polling.
+	SymlinkPollInterval time.Duration
 
 	LogFormat string // "text" | "json"
 	LogLevel  string // "debug" | "info" | "warn" | "error"

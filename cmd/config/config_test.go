@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"io/fs"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,6 +35,7 @@ var _ = Describe("Parse", func() {
 		Expect(cfg.Owner).To(BeNil())
 		Expect(cfg.LogFormat).To(Equal("text"))
 		Expect(cfg.LogLevel).To(Equal("info"))
+		Expect(cfg.SymlinkPollInterval).To(Equal(10 * time.Second))
 	})
 
 	DescribeTable("rejects an invocation missing a required flag",
@@ -64,6 +66,33 @@ var _ = Describe("Parse", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.Ignore).To(ContainElement("..*"))
+	})
+
+	It("parses --symlink-poll-interval as a duration", func() {
+		cfg, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--symlink-poll-interval", "1s",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.SymlinkPollInterval).To(Equal(time.Second))
+	})
+
+	It("accepts a zero --symlink-poll-interval to disable polling", func() {
+		cfg, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--symlink-poll-interval", "0",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.SymlinkPollInterval).To(Equal(time.Duration(0)))
+	})
+
+	It("rejects a negative --symlink-poll-interval", func() {
+		_, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--symlink-poll-interval", "-5s",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(errors.Is(err, config.ErrInvalidConfig)).To(BeTrue())
 	})
 
 	It("parses --file-mode and --dir-mode as octal", func() {

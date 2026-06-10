@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/scality/go-errors"
 	"github.com/spf13/pflag"
@@ -61,6 +62,8 @@ func Parse(prog string, args []string) (*Config, error) {
 		"octal mode forced on synced directories (e.g. 0755); default: preserve source")
 	owner := flags.String("owner", "",
 		"uid:gid forced on synced entries; default: preserve source")
+	symlinkPollInterval := flags.Duration("symlink-poll-interval", 10*time.Second,
+		"how often source symlinks are re-checked for changes behind them; 0 disables")
 	logFormat := flags.String("log-format", "text",
 		"log output format: text|json")
 	logLevel := flags.String("log-level", "info",
@@ -106,14 +109,22 @@ func Parse(prog string, args []string) (*Config, error) {
 		)
 	}
 
+	if *symlinkPollInterval < 0 {
+		return nil, errors.Wrap(ErrInvalidConfig,
+			errors.WithDetail("--symlink-poll-interval must not be negative"),
+			errors.WithProperty("symlink_poll_interval", symlinkPollInterval.String()),
+		)
+	}
+
 	cfg := &Config{
 		Source: *source,
 		Target: *target,
 		// Copy into a fresh slice so cfg.Ignore never aliases pflag's
 		// backing array nor the package-level builtinIgnores.
-		Ignore:    append(append([]string{}, *ignore...), builtinIgnores...),
-		LogFormat: *logFormat,
-		LogLevel:  *logLevel,
+		Ignore:              append(append([]string{}, *ignore...), builtinIgnores...),
+		SymlinkPollInterval: *symlinkPollInterval,
+		LogFormat:           *logFormat,
+		LogLevel:            *logLevel,
 	}
 
 	if flags.Changed("file-mode") {
