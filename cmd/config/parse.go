@@ -32,6 +32,15 @@ var (
 	logLevels  = []string{"debug", "info", "warn", "error"}
 )
 
+// builtinIgnores are always appended to the user's --ignore patterns.
+// Entries whose name starts with ".." are the plumbing of atomic
+// publishers — the kubelet's AtomicWriter exposes ConfigMap and Secret
+// volumes through `..data` and `..<timestamp>` entries and reserves the
+// prefix by rejecting user keys that start with ".." — so mirroring
+// them would duplicate the published content. They are appended (not a
+// flag default) so user-supplied --ignore patterns never displace them.
+var builtinIgnores = []string{"..*"}
+
 // Parse turns the raw argument list (os.Args[1:]) into a validated
 // Config. prog is the program name as invoked (filepath.Base(os.Args[0]))
 // and is used in the usage text. There are no environment-variable
@@ -98,9 +107,11 @@ func Parse(prog string, args []string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		Source:    *source,
-		Target:    *target,
-		Ignore:    *ignore,
+		Source: *source,
+		Target: *target,
+		// Copy into a fresh slice so cfg.Ignore never aliases pflag's
+		// backing array nor the package-level builtinIgnores.
+		Ignore:    append(append([]string{}, *ignore...), builtinIgnores...),
 		LogFormat: *logFormat,
 		LogLevel:  *logLevel,
 	}

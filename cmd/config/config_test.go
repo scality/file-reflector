@@ -28,7 +28,7 @@ var _ = Describe("Parse", func() {
 	It("applies the documented defaults when optional flags are unset", func() {
 		cfg, err := parse([]string{"--source", "/src", "--target", "/tgt"})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.Ignore).To(BeEmpty())
+		Expect(cfg.Ignore).To(Equal([]string{"..*"}))
 		Expect(cfg.FileMode).To(BeNil())
 		Expect(cfg.DirMode).To(BeNil())
 		Expect(cfg.Owner).To(BeNil())
@@ -47,14 +47,23 @@ var _ = Describe("Parse", func() {
 		Entry("missing both", []string{}),
 	)
 
-	It("collects repeated --ignore patterns in order", func() {
+	It("collects repeated --ignore patterns in order, then the built-in ones", func() {
 		cfg, err := parse([]string{
 			"--source", "/src", "--target", "/tgt",
 			"--ignore", "*.tmp",
 			"--ignore", "cache",
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.Ignore).To(Equal([]string{"*.tmp", "cache"}))
+		Expect(cfg.Ignore).To(Equal([]string{"*.tmp", "cache", "..*"}))
+	})
+
+	It("keeps the built-in ignore when the user supplies their own patterns", func() {
+		cfg, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--ignore", "*.log",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.Ignore).To(ContainElement("..*"))
 	})
 
 	It("parses --file-mode and --dir-mode as octal", func() {
