@@ -16,7 +16,8 @@ it. For usage and flags see the [README](README.md).
 - Bidirectional sync or conflict resolution.
 - A point-in-time snapshot of the whole tree (consistency is per-file and
   eventual; see [Concurrency](#concurrency-and-locking)).
-- Propagating symbolic links (they are skipped, see [Sync model](#sync-model)).
+- Replicating symbolic links as links (they are dereferenced instead, see
+  [Symbolic links](#symbolic-links-dereferenced-on-read-polled-for-changes)).
 
 ## Architecture
 
@@ -73,6 +74,11 @@ change that happens while the trees are being walked is captured and replayed
 afterwards rather than lost. New directories are added to the watch set
 recursively as they appear, because `inotify` is not recursive.
 
+A third event source, the symlink poller, feeds the same merged stream: it
+covers the changes that happen *behind* source symlinks, which `fsnotify`
+structurally cannot report (see
+[Symbolic links](#symbolic-links-dereferenced-on-read-polled-for-changes)).
+
 Events are processed by a single consumer goroutine, so reconciliation is
 serialized within one agent. A path whose reconciliation fails transiently
 (for example a file caught mid-write) is requeued after a short delay rather
@@ -91,7 +97,8 @@ than dropped; a permanently failing path keeps logging at each retry.
 | file | directory or symlink | remove, then write |
 | directory | absent | create |
 | directory | file or symlink | remove, then create |
-| symlink | any | skip (treated as absent → stale target removed) |
+| symlink (to a regular file) | any | follow: the file rules apply to its target |
+| symlink (anything else) | any | treated as absent → stale target removed |
 | any | any, path ignored | no-op |
 
 ### Content comparison: full hashing, not mtime
@@ -126,6 +133,80 @@ re-`chmod` (and re-fire a target event) forever. Mode `0` is a valid value —
 a fully locked-down file — but see the capability note below: a non-root
 agent can only re-read and re-hash a mode-`0` file it created if it holds the
 appropriate `DAC` capability.
+
+### Symbolic links: dereferenced on read, polled for changes
+
+Source symlinks to regular files are dereferenced at the metadata layer:
+the source-side `MetadataReader` resolves the link and reports its target's
+mode, owner, and size, so the rest of the reconciliation treats the path as
+a regular file and the target receives real content, never a link.
+Resolution happens inside `os.Root`, which confines it to the source tree:
+a link that is broken, loops, or escapes the root is reported as absent
+(with a warning) and any stale target entry is removed. The target-side
+reader keeps `lstat` semantics, so a symlink found in the target is seen as
+a symlink and replaced by the source content.
+
+Symlinks to directories are also treated as absent, on purpose. Reporting
+them as directories would make every tree walk recurse through the link,
+with two consequences: a link to an ancestor (`sub/up -> ..`) mirrors the
+tree into itself unboundedly at startup, and the files mirrored under the
+link's path go permanently stale afterwards — events name the real paths
+only, and reconciling the link path alone does not recurse. Restricting the
+follow to regular files keeps the model sound: one event (or one poll) on a
+link path is always a complete reconciliation of that path.
+
+Links are dereferenced rather than replicated because the consumer of the
+target expects files: a replicated link would point at a path that does not
+exist on the target side (or escapes it), and the primary case — the
+kubelet's atomically-published ConfigMap and Secret volumes — uses links
+purely as publication plumbing.
+
+#### Why a poller
+
+`inotify` is inode-based; there is no such thing as watching a symlink. A
+change *behind* a link therefore produces no event naming the link's path:
+
+- **kubelet volumes** publish keys as `myfile.txt -> ..data/myfile.txt` with
+  `..data -> ..<timestamp>/`. An update swaps `..data` atomically: the only
+  events fire on the `..*` plumbing — excluded by the built-in ignore — and
+  never on `myfile.txt` itself.
+- **in-place edits**: with `link -> cache/file.txt` and `--ignore cache`, a
+  write to the file fires an event on `cache/file.txt` only, which
+  reconciliation ignores; nothing ever names `link`.
+
+So files are *evented*, symlinks are *polled*: a dedicated `EventSource`,
+the symlink poller, sweeps the source tree every `--symlink-poll-interval`
+(default 10s, `0` disables) and emits the path of every non-ignored symlink
+into the same merged stream the watcher drains. `SyncPath` re-stats and
+re-hashes on every event, so an unchanged link is a cheap no-op (a stat,
+plus a hash only when sizes already match) and a changed one is repaired
+within one interval — comfortably ahead of the kubelet's own update cadence
+(about a minute).
+
+Each sweep is stateless on purpose. Alternatives considered:
+
+- **A registry of known links** (filled from walks and create events) would
+  save the periodic walk, but adds state that can go stale silently: a lost
+  create event means a link that is never polled and never repaired. The
+  sweep self-heals by construction; the registry is a possible optimisation
+  if walking ever shows up in profiles.
+- **A dependency index** (link → watched real paths) re-introduces the same
+  staleness risk and breaks on the kubelet case anyway: the real paths live
+  under the ignored `..*` plumbing.
+- **A full tree re-sync on any symlink-related event** handles the `..data`
+  swap but cannot see in-place edits behind links into ignored directories,
+  and rescans everything when one path would do.
+
+### Built-in `..*` ignore
+
+The `..*` ignore pattern is always appended to the user's `--ignore` list.
+Atomic publishers reserve the `..` name prefix — the kubelet rejects
+ConfigMap and Secret keys starting with `..` — so such entries can only be
+publication plumbing, and mirroring them would duplicate every published
+file in the target. The pattern is appended after flag parsing rather than
+set as the flag's default, because `pflag` replaces a default with the first
+user-supplied value, which would silently re-expose the plumbing as soon as
+the user passes any `--ignore` of their own.
 
 ## Concurrency and locking
 

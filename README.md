@@ -30,9 +30,13 @@ matches but whose mode or owner differs is fixed with `chmod`/`chown` alone.
 Writes are atomic (write to a temporary file, then rename), so a consumer
 never observes a half-written file.
 
-Symbolic links in the source are not propagated: the agent logs a warning
-and treats the path as absent, removing any stale entry at the same path in
-the target.
+Symbolic links in the source are followed when they point to regular files:
+the link is mirrored as a regular file carrying its target's content. Any
+other link — broken, looping, pointing outside the source tree, or pointing
+to a directory — is treated as absent (with a warning), so any stale entry
+at the same path in the target is removed. Every source symlink is also
+re-checked on a fixed interval (`--symlink-poll-interval`, default 10s) so
+that changes happening behind a link are picked up.
 
 For the architecture and the reasoning behind these choices, see
 [DESIGN.md](DESIGN.md).
@@ -51,6 +55,7 @@ file-reflector --source /path/to/source --target /path/to/target
 | `--file-mode` | Octal mode forced on synced files (e.g. `0644`). Default: preserve the source's mode. |
 | `--dir-mode` | Octal mode forced on synced directories (e.g. `0755`). Default: preserve the source's mode. |
 | `--owner` | `uid:gid` forced on synced entries. Default: preserve the source's owner. |
+| `--symlink-poll-interval` | How often source symlinks are re-checked for changes behind them. `0` disables. Default: `10s`. |
 | `--log-format` | `text` or `json`. Default: `text`. |
 | `--log-level` | `debug`, `info`, `warn`, or `error`. Default: `info`. |
 | `--version` | Print the version and exit. |
@@ -75,6 +80,33 @@ let externally-managed files coexist in the target directory.
 Patterns use Go's [`path/filepath.Match`](https://pkg.go.dev/path/filepath#Match)
 syntax (`*`, `?`, `[…]`); there is no recursive `**`. An ignored path is
 never created, modified, nor deleted.
+
+One pattern is built in and always active: `..*`. Entries whose name starts
+with `..` are the plumbing of atomic publishers such as the kubelet's
+ConfigMap and Secret volumes (which reserve that prefix), and mirroring them
+would duplicate the published content.
+
+### Kubernetes ConfigMap and Secret sources
+
+ConfigMap and Secret volumes work out of the box. The kubelet publishes
+their keys atomically through symlinks:
+
+```
+myfile.txt -> ..data/myfile.txt
+..data     -> ..2026_06_10_07_00_00.123456789/
+```
+
+Because source symlinks are followed and the `..*` plumbing is ignored by
+default, mirroring such a volume needs no options:
+
+```
+file-reflector --source /etc/config --target /var/lib/app/config
+```
+
+The target receives only the published keys (here `myfile.txt`), as regular
+files. When the ConfigMap is updated the kubelet swaps `..data`, which fires
+no event on the visible paths; the symlink re-check picks the change up, so
+it propagates within `--symlink-poll-interval`.
 
 ## Permissions and ownership
 
