@@ -8,6 +8,6 @@ RUN curl -sSfL  https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/in
   | sudo sh -s -- v${GOLANGCI_VERSION}
 
 # renovate: datasource=github-releases depName=vektra/mockery extractVersion=^v(?<version>.+)$
-ARG MOCKERY_VERSION=3.7.0
+ARG MOCKERY_VERSION=3.7.1
 RUN curl -sSfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz \
   | sudo tar -C /usr/local/bin -xzf - mockery

@@ -74,7 +74,7 @@ type MockContentReader_Open_Call struct {
 // Open is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockContentReader_Expecter) Open(ctx interface{}, relPath interface{}) *MockContentReader_Open_Call {
+func (_e *MockContentReader_Expecter) Open(ctx any, relPath any) *MockContentReader_Open_Call {
 	return &MockContentReader_Open_Call{Call: _e.mock.On("Open", ctx, relPath)}
 }
 

@@ -67,7 +67,7 @@ type MockContentWriter_Mkdir_Call struct {
 //   - mode fs.FileMode
 //   - uid int
 //   - gid int
-func (_e *MockContentWriter_Expecter) Mkdir(ctx interface{}, relPath interface{}, mode interface{}, uid interface{}, gid interface{}) *MockContentWriter_Mkdir_Call {
+func (_e *MockContentWriter_Expecter) Mkdir(ctx any, relPath any, mode any, uid any, gid any) *MockContentWriter_Mkdir_Call {
 	return &MockContentWriter_Mkdir_Call{Call: _e.mock.On("Mkdir", ctx, relPath, mode, uid, gid)}
 }
 
@@ -143,7 +143,7 @@ type MockContentWriter_WriteAtomic_Call struct {
 //   - mode fs.FileMode
 //   - uid int
 //   - gid int
-func (_e *MockContentWriter_Expecter) WriteAtomic(ctx interface{}, relPath interface{}, src interface{}, mode interface{}, uid interface{}, gid interface{}) *MockContentWriter_WriteAtomic_Call {
+func (_e *MockContentWriter_Expecter) WriteAtomic(ctx any, relPath any, src any, mode any, uid any, gid any) *MockContentWriter_WriteAtomic_Call {
 	return &MockContentWriter_WriteAtomic_Call{Call: _e.mock.On("WriteAtomic", ctx, relPath, src, mode, uid, gid)}
 }
 

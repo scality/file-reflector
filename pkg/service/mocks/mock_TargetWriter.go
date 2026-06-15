@@ -66,7 +66,7 @@ type MockTargetWriter_Chmod_Call struct {
 //   - ctx context.Context
 //   - relPath string
 //   - mode fs.FileMode
-func (_e *MockTargetWriter_Expecter) Chmod(ctx interface{}, relPath interface{}, mode interface{}) *MockTargetWriter_Chmod_Call {
+func (_e *MockTargetWriter_Expecter) Chmod(ctx any, relPath any, mode any) *MockTargetWriter_Chmod_Call {
 	return &MockTargetWriter_Chmod_Call{Call: _e.mock.On("Chmod", ctx, relPath, mode)}
 }
 
@@ -130,7 +130,7 @@ type MockTargetWriter_Chown_Call struct {
 //   - relPath string
 //   - uid int
 //   - gid int
-func (_e *MockTargetWriter_Expecter) Chown(ctx interface{}, relPath interface{}, uid interface{}, gid interface{}) *MockTargetWriter_Chown_Call {
+func (_e *MockTargetWriter_Expecter) Chown(ctx any, relPath any, uid any, gid any) *MockTargetWriter_Chown_Call {
 	return &MockTargetWriter_Chown_Call{Call: _e.mock.On("Chown", ctx, relPath, uid, gid)}
 }
 
@@ -208,7 +208,7 @@ type MockTargetWriter_Hash_Call struct {
 // Hash is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockTargetWriter_Expecter) Hash(ctx interface{}, relPath interface{}) *MockTargetWriter_Hash_Call {
+func (_e *MockTargetWriter_Expecter) Hash(ctx any, relPath any) *MockTargetWriter_Hash_Call {
 	return &MockTargetWriter_Hash_Call{Call: _e.mock.On("Hash", ctx, relPath)}
 }
 
@@ -268,7 +268,7 @@ type MockTargetWriter_Mkdir_Call struct {
 //   - mode fs.FileMode
 //   - uid int
 //   - gid int
-func (_e *MockTargetWriter_Expecter) Mkdir(ctx interface{}, relPath interface{}, mode interface{}, uid interface{}, gid interface{}) *MockTargetWriter_Mkdir_Call {
+func (_e *MockTargetWriter_Expecter) Mkdir(ctx any, relPath any, mode any, uid any, gid any) *MockTargetWriter_Mkdir_Call {
 	return &MockTargetWriter_Mkdir_Call{Call: _e.mock.On("Mkdir", ctx, relPath, mode, uid, gid)}
 }
 
@@ -351,7 +351,7 @@ type MockTargetWriter_ReadDir_Call struct {
 // ReadDir is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockTargetWriter_Expecter) ReadDir(ctx interface{}, relPath interface{}) *MockTargetWriter_ReadDir_Call {
+func (_e *MockTargetWriter_Expecter) ReadDir(ctx any, relPath any) *MockTargetWriter_ReadDir_Call {
 	return &MockTargetWriter_ReadDir_Call{Call: _e.mock.On("ReadDir", ctx, relPath)}
 }
 
@@ -408,7 +408,7 @@ type MockTargetWriter_Remove_Call struct {
 // Remove is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockTargetWriter_Expecter) Remove(ctx interface{}, relPath interface{}) *MockTargetWriter_Remove_Call {
+func (_e *MockTargetWriter_Expecter) Remove(ctx any, relPath any) *MockTargetWriter_Remove_Call {
 	return &MockTargetWriter_Remove_Call{Call: _e.mock.On("Remove", ctx, relPath)}
 }
 
@@ -474,7 +474,7 @@ type MockTargetWriter_Stat_Call struct {
 // Stat is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockTargetWriter_Expecter) Stat(ctx interface{}, relPath interface{}) *MockTargetWriter_Stat_Call {
+func (_e *MockTargetWriter_Expecter) Stat(ctx any, relPath any) *MockTargetWriter_Stat_Call {
 	return &MockTargetWriter_Stat_Call{Call: _e.mock.On("Stat", ctx, relPath)}
 }
 
@@ -535,7 +535,7 @@ type MockTargetWriter_WriteAtomic_Call struct {
 //   - mode fs.FileMode
 //   - uid int
 //   - gid int
-func (_e *MockTargetWriter_Expecter) WriteAtomic(ctx interface{}, relPath interface{}, src interface{}, mode interface{}, uid interface{}, gid interface{}) *MockTargetWriter_WriteAtomic_Call {
+func (_e *MockTargetWriter_Expecter) WriteAtomic(ctx any, relPath any, src any, mode any, uid any, gid any) *MockTargetWriter_WriteAtomic_Call {
 	return &MockTargetWriter_WriteAtomic_Call{Call: _e.mock.On("WriteAtomic", ctx, relPath, src, mode, uid, gid)}
 }
 

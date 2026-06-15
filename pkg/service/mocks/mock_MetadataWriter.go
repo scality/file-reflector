@@ -64,7 +64,7 @@ type MockMetadataWriter_Chmod_Call struct {
 //   - ctx context.Context
 //   - relPath string
 //   - mode fs.FileMode
-func (_e *MockMetadataWriter_Expecter) Chmod(ctx interface{}, relPath interface{}, mode interface{}) *MockMetadataWriter_Chmod_Call {
+func (_e *MockMetadataWriter_Expecter) Chmod(ctx any, relPath any, mode any) *MockMetadataWriter_Chmod_Call {
 	return &MockMetadataWriter_Chmod_Call{Call: _e.mock.On("Chmod", ctx, relPath, mode)}
 }
 
@@ -128,7 +128,7 @@ type MockMetadataWriter_Chown_Call struct {
 //   - relPath string
 //   - uid int
 //   - gid int
-func (_e *MockMetadataWriter_Expecter) Chown(ctx interface{}, relPath interface{}, uid interface{}, gid interface{}) *MockMetadataWriter_Chown_Call {
+func (_e *MockMetadataWriter_Expecter) Chown(ctx any, relPath any, uid any, gid any) *MockMetadataWriter_Chown_Call {
 	return &MockMetadataWriter_Chown_Call{Call: _e.mock.On("Chown", ctx, relPath, uid, gid)}
 }
 

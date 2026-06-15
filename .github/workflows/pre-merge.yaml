@@ -71,7 +71,7 @@ jobs:
       - name: Install mockery
         env:
           # renovate: datasource=github-releases depName=vektra/mockery
-          MOCKERY_VERSION: v3.7.0
+          MOCKERY_VERSION: v3.7.1
         run: go install github.com/vektra/mockery/v3@${{ env.MOCKERY_VERSION }}
       - name: Verify generated mocks are up to date
         run: |

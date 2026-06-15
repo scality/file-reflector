@@ -73,7 +73,7 @@ type MockContentHasher_Hash_Call struct {
 // Hash is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockContentHasher_Expecter) Hash(ctx interface{}, relPath interface{}) *MockContentHasher_Hash_Call {
+func (_e *MockContentHasher_Expecter) Hash(ctx any, relPath any) *MockContentHasher_Hash_Call {
 	return &MockContentHasher_Hash_Call{Call: _e.mock.On("Hash", ctx, relPath)}
 }
 

@@ -75,7 +75,7 @@ type MockSourceReader_Hash_Call struct {
 // Hash is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockSourceReader_Expecter) Hash(ctx interface{}, relPath interface{}) *MockSourceReader_Hash_Call {
+func (_e *MockSourceReader_Expecter) Hash(ctx any, relPath any) *MockSourceReader_Hash_Call {
 	return &MockSourceReader_Hash_Call{Call: _e.mock.On("Hash", ctx, relPath)}
 }
 
@@ -143,7 +143,7 @@ type MockSourceReader_Open_Call struct {
 // Open is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockSourceReader_Expecter) Open(ctx interface{}, relPath interface{}) *MockSourceReader_Open_Call {
+func (_e *MockSourceReader_Expecter) Open(ctx any, relPath any) *MockSourceReader_Open_Call {
 	return &MockSourceReader_Open_Call{Call: _e.mock.On("Open", ctx, relPath)}
 }
 
@@ -211,7 +211,7 @@ type MockSourceReader_ReadDir_Call struct {
 // ReadDir is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockSourceReader_Expecter) ReadDir(ctx interface{}, relPath interface{}) *MockSourceReader_ReadDir_Call {
+func (_e *MockSourceReader_Expecter) ReadDir(ctx any, relPath any) *MockSourceReader_ReadDir_Call {
 	return &MockSourceReader_ReadDir_Call{Call: _e.mock.On("ReadDir", ctx, relPath)}
 }
 
@@ -277,7 +277,7 @@ type MockSourceReader_Stat_Call struct {
 // Stat is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockSourceReader_Expecter) Stat(ctx interface{}, relPath interface{}) *MockSourceReader_Stat_Call {
+func (_e *MockSourceReader_Expecter) Stat(ctx any, relPath any) *MockSourceReader_Stat_Call {
 	return &MockSourceReader_Stat_Call{Call: _e.mock.On("Stat", ctx, relPath)}
 }
 

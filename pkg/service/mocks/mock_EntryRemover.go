@@ -62,7 +62,7 @@ type MockEntryRemover_Remove_Call struct {
 // Remove is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockEntryRemover_Expecter) Remove(ctx interface{}, relPath interface{}) *MockEntryRemover_Remove_Call {
+func (_e *MockEntryRemover_Expecter) Remove(ctx any, relPath any) *MockEntryRemover_Remove_Call {
 	return &MockEntryRemover_Remove_Call{Call: _e.mock.On("Remove", ctx, relPath)}
 }
 
