@@ -2,6 +2,8 @@ package metadatareader_test
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -114,6 +116,115 @@ var _ = Describe("OSFS", func() {
 			_, err := r.ReadDir(ctx, "locked")
 			Expect(err).To(HaveOccurred())
 			Expect(errors.Is(err, metadatareader.ErrMetadataRead)).To(BeTrue())
+		})
+	})
+})
+
+var _ = Describe("OSFS following symlinks", func() {
+	var (
+		tmpDir string
+		root   *os.Root
+		r      *metadatareader.OSFS
+		ctx    context.Context
+	)
+
+	BeforeEach(func() {
+		tmpDir = GinkgoT().TempDir()
+
+		var err error
+
+		root, err = os.OpenRoot(tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(func() { _ = root.Close() })
+
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+		r = metadatareader.NewFollowingOSFS(root, logger)
+		ctx = context.Background()
+	})
+
+	Describe("Stat", func() {
+		It("reports a symlink as its target file", func() {
+			Expect(os.WriteFile(filepath.Join(tmpDir, "real.txt"), []byte("hello"), 0o640)).To(Succeed())
+			Expect(os.Symlink("real.txt", filepath.Join(tmpDir, "link"))).To(Succeed())
+
+			node, err := r.Stat(ctx, "link")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeFile))
+			Expect(node.Size).To(Equal(int64(5)))
+			Expect(node.Mode.Perm()).To(Equal(os.FileMode(0o640)))
+		})
+
+		It("resolves chained symlinks (the kubelet atomic-writer layout)", func() {
+			Expect(os.Mkdir(filepath.Join(tmpDir, "..2026_06_10"), 0o750)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tmpDir, "..2026_06_10", "myfile.txt"), []byte("server"), 0o640)).To(Succeed())
+			Expect(os.Symlink("..2026_06_10", filepath.Join(tmpDir, "..data"))).To(Succeed())
+			Expect(os.Symlink("..data/myfile.txt", filepath.Join(tmpDir, "myfile.txt"))).To(Succeed())
+
+			node, err := r.Stat(ctx, "myfile.txt")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeFile))
+			Expect(node.Size).To(Equal(int64(6)))
+		})
+
+		It("treats a symlink to a directory as absent", func() {
+			Expect(os.Mkdir(filepath.Join(tmpDir, "realdir"), 0o750)).To(Succeed())
+			Expect(os.Symlink("realdir", filepath.Join(tmpDir, "dirlink"))).To(Succeed())
+
+			node, err := r.Stat(ctx, "dirlink")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeAbsent))
+		})
+
+		It("reports a broken symlink as absent", func() {
+			Expect(os.Symlink("nowhere", filepath.Join(tmpDir, "broken"))).To(Succeed())
+
+			node, err := r.Stat(ctx, "broken")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeAbsent))
+		})
+
+		It("reports a symlink loop as absent", func() {
+			Expect(os.Symlink("b", filepath.Join(tmpDir, "a"))).To(Succeed())
+			Expect(os.Symlink("a", filepath.Join(tmpDir, "b"))).To(Succeed())
+
+			node, err := r.Stat(ctx, "a")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeAbsent))
+		})
+
+		It("reports a symlink escaping the root as absent", func() {
+			Expect(os.Symlink("/etc/hostname", filepath.Join(tmpDir, "escape"))).To(Succeed())
+
+			node, err := r.Stat(ctx, "escape")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeAbsent))
+		})
+
+		It("propagates an access error instead of reporting absent", func() {
+			if os.Geteuid() == 0 {
+				Skip("root bypasses directory permissions, so the access error cannot be provoked")
+			}
+
+			// A link to a file behind an unsearchable directory: resolving
+			// it fails with EACCES, which must surface as an error so the
+			// caller requeues rather than deleting the mirror.
+			Expect(os.Mkdir(filepath.Join(tmpDir, "vault"), 0o750)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(tmpDir, "vault", "secret"), []byte("x"), 0o600)).To(Succeed())
+			Expect(os.Symlink("vault/secret", filepath.Join(tmpDir, "link"))).To(Succeed())
+			Expect(os.Chmod(filepath.Join(tmpDir, "vault"), 0o000)).To(Succeed())
+			DeferCleanup(func() { _ = os.Chmod(filepath.Join(tmpDir, "vault"), 0o750) })
+
+			_, err := r.Stat(ctx, "link")
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, metadatareader.ErrMetadataRead)).To(BeTrue())
+		})
+
+		It("still reports a regular file directly", func() {
+			Expect(os.WriteFile(filepath.Join(tmpDir, "plain"), []byte("x"), 0o600)).To(Succeed())
+
+			node, err := r.Stat(ctx, "plain")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(node.Kind).To(Equal(domain.NodeFile))
 		})
 	})
 })

@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"io/fs"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,12 +29,13 @@ var _ = Describe("Parse", func() {
 	It("applies the documented defaults when optional flags are unset", func() {
 		cfg, err := parse([]string{"--source", "/src", "--target", "/tgt"})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.Ignore).To(BeEmpty())
+		Expect(cfg.Ignore).To(Equal([]string{"..*"}))
 		Expect(cfg.FileMode).To(BeNil())
 		Expect(cfg.DirMode).To(BeNil())
 		Expect(cfg.Owner).To(BeNil())
 		Expect(cfg.LogFormat).To(Equal("text"))
 		Expect(cfg.LogLevel).To(Equal("info"))
+		Expect(cfg.SymlinkPollInterval).To(Equal(10 * time.Second))
 	})
 
 	DescribeTable("rejects an invocation missing a required flag",
@@ -47,14 +49,50 @@ var _ = Describe("Parse", func() {
 		Entry("missing both", []string{}),
 	)
 
-	It("collects repeated --ignore patterns in order", func() {
+	It("collects repeated --ignore patterns in order, then the built-in ones", func() {
 		cfg, err := parse([]string{
 			"--source", "/src", "--target", "/tgt",
 			"--ignore", "*.tmp",
 			"--ignore", "cache",
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.Ignore).To(Equal([]string{"*.tmp", "cache"}))
+		Expect(cfg.Ignore).To(Equal([]string{"*.tmp", "cache", "..*"}))
+	})
+
+	It("keeps the built-in ignore when the user supplies their own patterns", func() {
+		cfg, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--ignore", "*.log",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.Ignore).To(ContainElement("..*"))
+	})
+
+	It("parses --symlink-poll-interval as a duration", func() {
+		cfg, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--symlink-poll-interval", "1s",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.SymlinkPollInterval).To(Equal(time.Second))
+	})
+
+	It("accepts a zero --symlink-poll-interval to disable polling", func() {
+		cfg, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--symlink-poll-interval", "0",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.SymlinkPollInterval).To(Equal(time.Duration(0)))
+	})
+
+	It("rejects a negative --symlink-poll-interval", func() {
+		_, err := parse([]string{
+			"--source", "/src", "--target", "/tgt",
+			"--symlink-poll-interval", "-5s",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(errors.Is(err, config.ErrInvalidConfig)).To(BeTrue())
 	})
 
 	It("parses --file-mode and --dir-mode as octal", func() {

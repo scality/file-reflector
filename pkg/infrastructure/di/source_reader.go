@@ -51,8 +51,11 @@ func (c *Container) getSourceReader() (service.SourceReader, error) {
 			return nil, err
 		}
 
+		// The source side resolves symlinks: a symlink is mirrored as its
+		// target's content. The target side (see getTargetWriter) keeps
+		// lstat semantics so symlinks found in the target are replaced.
 		c.sourceReader = &sourceReader{
-			MetadataReader: metadatareader.NewOSFS(root),
+			MetadataReader: metadatareader.NewFollowingOSFS(root, c.GetLogger()),
 			ContentReader:  contentreader.NewOSFS(root),
 			ContentHasher:  contenthasher.NewOSFS(root),
 		}

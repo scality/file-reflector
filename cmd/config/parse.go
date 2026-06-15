@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/scality/go-errors"
 	"github.com/spf13/pflag"
@@ -32,6 +33,15 @@ var (
 	logLevels  = []string{"debug", "info", "warn", "error"}
 )
 
+// builtinIgnores are always appended to the user's --ignore patterns.
+// Entries whose name starts with ".." are the plumbing of atomic
+// publishers — the kubelet's AtomicWriter exposes ConfigMap and Secret
+// volumes through `..data` and `..<timestamp>` entries and reserves the
+// prefix by rejecting user keys that start with ".." — so mirroring
+// them would duplicate the published content. They are appended (not a
+// flag default) so user-supplied --ignore patterns never displace them.
+var builtinIgnores = []string{"..*"}
+
 // Parse turns the raw argument list (os.Args[1:]) into a validated
 // Config. prog is the program name as invoked (filepath.Base(os.Args[0]))
 // and is used in the usage text. There are no environment-variable
@@ -52,6 +62,8 @@ func Parse(prog string, args []string) (*Config, error) {
 		"octal mode forced on synced directories (e.g. 0755); default: preserve source")
 	owner := flags.String("owner", "",
 		"uid:gid forced on synced entries; default: preserve source")
+	symlinkPollInterval := flags.Duration("symlink-poll-interval", 10*time.Second,
+		"how often source symlinks are re-checked for changes behind them; 0 disables")
 	logFormat := flags.String("log-format", "text",
 		"log output format: text|json")
 	logLevel := flags.String("log-level", "info",
@@ -97,12 +109,22 @@ func Parse(prog string, args []string) (*Config, error) {
 		)
 	}
 
+	if *symlinkPollInterval < 0 {
+		return nil, errors.Wrap(ErrInvalidConfig,
+			errors.WithDetail("--symlink-poll-interval must not be negative"),
+			errors.WithProperty("symlink_poll_interval", symlinkPollInterval.String()),
+		)
+	}
+
 	cfg := &Config{
-		Source:    *source,
-		Target:    *target,
-		Ignore:    *ignore,
-		LogFormat: *logFormat,
-		LogLevel:  *logLevel,
+		Source: *source,
+		Target: *target,
+		// Copy into a fresh slice so cfg.Ignore never aliases pflag's
+		// backing array nor the package-level builtinIgnores.
+		Ignore:              append(append([]string{}, *ignore...), builtinIgnores...),
+		SymlinkPollInterval: *symlinkPollInterval,
+		LogFormat:           *logFormat,
+		LogLevel:            *logLevel,
 	}
 
 	if flags.Changed("file-mode") {
