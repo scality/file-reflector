@@ -74,7 +74,7 @@ type MockMetadataReader_ReadDir_Call struct {
 // ReadDir is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockMetadataReader_Expecter) ReadDir(ctx interface{}, relPath interface{}) *MockMetadataReader_ReadDir_Call {
+func (_e *MockMetadataReader_Expecter) ReadDir(ctx any, relPath any) *MockMetadataReader_ReadDir_Call {
 	return &MockMetadataReader_ReadDir_Call{Call: _e.mock.On("ReadDir", ctx, relPath)}
 }
 
@@ -140,7 +140,7 @@ type MockMetadataReader_Stat_Call struct {
 // Stat is a helper method to define mock.On call
 //   - ctx context.Context
 //   - relPath string
-func (_e *MockMetadataReader_Expecter) Stat(ctx interface{}, relPath interface{}) *MockMetadataReader_Stat_Call {
+func (_e *MockMetadataReader_Expecter) Stat(ctx any, relPath any) *MockMetadataReader_Stat_Call {
 	return &MockMetadataReader_Stat_Call{Call: _e.mock.On("Stat", ctx, relPath)}
 }
 

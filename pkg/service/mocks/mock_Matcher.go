@@ -59,7 +59,7 @@ type MockMatcher_Matches_Call struct {
 
 // Matches is a helper method to define mock.On call
 //   - relPath string
-func (_e *MockMatcher_Expecter) Matches(relPath interface{}) *MockMatcher_Matches_Call {
+func (_e *MockMatcher_Expecter) Matches(relPath any) *MockMatcher_Matches_Call {
 	return &MockMatcher_Matches_Call{Call: _e.mock.On("Matches", relPath)}
 }
 
