@@ -2,7 +2,6 @@
 [![GitHub release](https://img.shields.io/github/v/release/scality/file-reflector)](https://github.com/scality/file-reflector/releases/latest)
 [![Go version](https://img.shields.io/github/go-mod/go-version/scality/file-reflector)](go.mod)
 [![License](https://img.shields.io/github/license/scality/file-reflector)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/scality/file-reflector)](https://goreportcard.com/report/github.com/scality/file-reflector)
 
 # file-reflector
 
