@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
-FROM golang:1.27@sha256:6f1acc898d064a4e9d5773ee574a9af6a9b786306939ac14d7fd806bf62046db AS builder
+FROM golang:1.27.3-alpine@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -29,9 +29,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build \
 # BuildKit preserves the security.capability xattr across the COPY into
 # the final stage. getcap prints the result so it is visible in the
 # build log.
-RUN apt-get update \
-    && apt-get install --yes --no-install-recommends libcap2-bin \
-    && rm -rf /var/lib/apt/lists/* \
+RUN apk add --no-cache libcap \
     && setcap cap_chown,cap_dac_override,cap_fowner+ep /workspace/file-reflector \
     && getcap /workspace/file-reflector
 
