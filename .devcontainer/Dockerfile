@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/go:1.27-trixie@sha256:32aad7e9eefed4fe99987cc4efef2f9723bd57c556f171143ecf65e0ba855ff3
+FROM mcr.microsoft.com/devcontainers/go:1.27-trixie@sha256:c83c320b68e27dc36903cd5ee07394870c5330dfd77b0897e78c7e1aa00ddfd0
 
 USER vscode
 
@@ -8,6 +8,6 @@ RUN curl -sSfL  https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/in
   | sudo sh -s -- v${GOLANGCI_VERSION}
 
 # renovate: datasource=github-releases depName=vektra/mockery extractVersion=^v(?<version>.+)$
-ARG MOCKERY_VERSION=3.9.0
+ARG MOCKERY_VERSION=3.9.1
 RUN curl -sSfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz \
   | sudo tar -C /usr/local/bin -xzf - mockery
