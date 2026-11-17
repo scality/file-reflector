@@ -159,7 +159,7 @@ capabilities your configuration actually needs.
 
 ## Development
 
-Requires Go 1.26+. Tooling: [golangci-lint](https://golangci-lint.run/) and
+Requires Go, at the version in `go.mod`. Tooling: [golangci-lint](https://golangci-lint.run/) and
 [mockery](https://vektra.github.io/mockery/) (both pinned in
 `.devcontainer/Dockerfile`).
 

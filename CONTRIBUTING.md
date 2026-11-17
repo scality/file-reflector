@@ -9,7 +9,8 @@ the conventions the codebase follows. For what the tool does see the
 The repository ships a devcontainer (`.devcontainer/`) with Go and the pinned
 tooling ([golangci-lint](https://golangci-lint.run/) and
 [mockery](https://vektra.github.io/mockery/)) already installed. Outside the
-devcontainer you need Go 1.26+ and those two tools on your `PATH`.
+devcontainer you need Go (the version in `go.mod`) and those two tools on your
+`PATH`.
 
 The everyday commands are listed in the README's
 [Development](README.md#development) section.
