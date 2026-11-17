@@ -1,4 +1,9 @@
-FROM mcr.microsoft.com/devcontainers/go:1.27-trixie@sha256:32aad7e9eefed4fe99987cc4efef2f9723bd57c556f171143ecf65e0ba855ff3
+FROM mcr.microsoft.com/devcontainers/go:1.27-trixie@sha256:c83c320b68e27dc36903cd5ee07394870c5330dfd77b0897e78c7e1aa00ddfd0
+# The devcontainers image tag has no Go patch version, and the image sets
+# GOTOOLCHAIN=local. Take Go from the Dockerfile's golang image, so the
+# patch is pinned and matches go.mod.
+RUN rm -rf /usr/local/go
+COPY --from=golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 /usr/local/go /usr/local/go
 
 USER vscode
 
@@ -8,6 +13,6 @@ RUN curl -sSfL  https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/in
   | sudo sh -s -- v${GOLANGCI_VERSION}
 
 # renovate: datasource=github-releases depName=vektra/mockery extractVersion=^v(?<version>.+)$
-ARG MOCKERY_VERSION=3.9.0
+ARG MOCKERY_VERSION=3.9.1
 RUN curl -sSfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz \
   | sudo tar -C /usr/local/bin -xzf - mockery
