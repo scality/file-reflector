@@ -159,9 +159,9 @@ capabilities your configuration actually needs.
 
 ## Development
 
-Requires Go, at the version in `go.mod`. Tooling: [golangci-lint](https://golangci-lint.run/) and
-[mockery](https://vektra.github.io/mockery/) (both pinned in
-`.devcontainer/Dockerfile`).
+Requires Go, at the version in `go.mod`. Tooling: [golangci-lint](https://golangci-lint.run/)
+(pinned in `.devcontainer/Dockerfile`) and [mockery](https://vektra.github.io/mockery/)
+(a `tool` in `go.mod`, run by `go generate`).
 
 ```
 go test ./...          # run the test suite
