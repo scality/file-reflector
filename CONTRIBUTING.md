@@ -6,11 +6,11 @@ the conventions the codebase follows. For what the tool does see the
 
 ## Development environment
 
-The repository ships a devcontainer (`.devcontainer/`) with Go and the pinned
-tooling ([golangci-lint](https://golangci-lint.run/) and
-[mockery](https://vektra.github.io/mockery/)) already installed. Outside the
-devcontainer you need Go (the version in `go.mod`) and those two tools on your
-`PATH`.
+The repository ships a devcontainer (`.devcontainer/`) with Go and
+[golangci-lint](https://golangci-lint.run/) already installed. Outside the
+devcontainer you need Go (the version in `go.mod`) and golangci-lint on your
+`PATH`. [mockery](https://vektra.github.io/mockery/) is a `tool` in `go.mod`:
+`go generate ./...` runs it, nothing to install.
 
 The everyday commands are listed in the README's
 [Development](README.md#development) section.

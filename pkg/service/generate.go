@@ -1,3 +1,3 @@
 package service
 
-//go:generate mockery
+//go:generate go tool mockery

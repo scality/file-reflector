@@ -11,8 +11,3 @@ USER vscode
 ARG GOLANGCI_VERSION=2.15.0
 RUN curl -sSfL  https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
   | sudo sh -s -- v${GOLANGCI_VERSION}
-
-# renovate: datasource=github-releases depName=vektra/mockery extractVersion=^v(?<version>.+)$
-ARG MOCKERY_VERSION=3.9.1
-RUN curl -sSfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz \
-  | sudo tar -C /usr/local/bin -xzf - mockery
